@@ -1,0 +1,417 @@
+import React, { useState } from 'react';
+import { Eye, Download, Send, Mail, AlertTriangle, Calendar, Clock } from 'lucide-react';
+import { generateNewsletterPreview } from '../utils/newsletterGenerator';
+import { convertKit } from '../services/convertkit';
+import type { CryptoData } from '../types/crypto';
+
+interface NewsletterPreviewProps {
+  cryptos: CryptoData[];
+}
+
+export const NewsletterPreview: React.FC<NewsletterPreviewProps> = ({ cryptos }) => {
+  const [showPreview, setShowPreview] = useState(false);
+  const [newsletterHTML, setNewsletterHTML] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState<string | null>(null);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [scheduleStatus, setScheduleStatus] = useState<string | null>(null);
+
+  const isConvertKitConfigured = convertKit.isFullyConfigured();
+
+  // Calculate next Wednesday at 4:15 PM EST for testing
+  const getNextWednesdaySchedule = () => {
+    const now = new Date();
+    
+    // Create date in EST timezone
+    const estOffset = -5; // EST is UTC-5 (or UTC-4 during DST)
+    const isDST = isDaylightSavingTime(now);
+    const offset = isDST ? -4 : -5;
+    
+    const nextWednesday = new Date();
+    
+    // Calculate days until next Wednesday (3 = Wednesday)
+    const daysUntilWednesday = (3 - now.getDay() + 7) % 7;
+    
+    // Convert current time to EST
+    const nowEST = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (offset * 3600000));
+    
+    // If it's already Wednesday and past 4:15 PM EST, schedule for next Wednesday
+    if (daysUntilWednesday === 0 && (nowEST.getHours() > 16 || (nowEST.getHours() === 16 && nowEST.getMinutes() >= 15))) {
+      nextWednesday.setDate(now.getDate() + 7);
+    } else if (daysUntilWednesday === 0) {
+      // It's Wednesday but before 4:15 PM, schedule for today
+      nextWednesday.setDate(now.getDate());
+    } else {
+      nextWednesday.setDate(now.getDate() + daysUntilWednesday);
+    }
+    
+    // Set to 4:15 PM EST (convert to UTC for ConvertKit)
+    const estHour = 16; // 4 PM
+    const estMinute = 15;
+    const utcHour = estHour - offset; // Convert EST to UTC
+    
+    nextWednesday.setUTCHours(utcHour, estMinute, 0, 0);
+    return nextWednesday;
+  };
+  
+  // Helper function to determine if it's daylight saving time
+  const isDaylightSavingTime = (date: Date) => {
+    const january = new Date(date.getFullYear(), 0, 1).getTimezoneOffset();
+    const july = new Date(date.getFullYear(), 6, 1).getTimezoneOffset();
+    return Math.max(january, july) !== date.getTimezoneOffset();
+  };
+
+  const handlePreview = () => {
+    const html = generateNewsletterPreview(cryptos);
+    setNewsletterHTML(html);
+    setShowPreview(true);
+  };
+
+  const handleFullPreview = () => {
+    const html = generateNewsletterPreview(cryptos);
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write(html);
+      newWindow.document.close();
+    }
+  };
+
+  const handleDownload = () => {
+    const html = generateNewsletterPreview(cryptos);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cryptomonth-newsletter-${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleScheduleWeeklyNewsletter = async () => {
+    if (!isConvertKitConfigured) {
+      setScheduleStatus('ConvertKit is not fully configured. Please check environment variables.');
+      return;
+    }
+
+    setIsScheduling(true);
+    setScheduleStatus(null);
+    
+    try {
+      const html = generateNewsletterPreview(cryptos);
+    
+    setScheduleStatus(`✅ Newsletter scheduled for ${scheduledTime.toLocaleString()}! 
+    The system will automatically send it in 7 minutes. 
+    Watch the browser console and look for a green notification when it sends.
+    Newsletter ID: ${id}`);
+  };
+
+  // Schedule for 5:50 PM today (for immediate testing)
+  const scheduleFor550PM = () => {
+    const scheduledTime = new Date();
+    scheduledTime.setHours(17, 50, 0, 0); // 5:50 PM
+    
+    // If it's already past 5:50 PM, schedule for tomorrow
+    if (scheduledTime <= new Date()) {
+      scheduledTime.setDate(scheduledTime.getDate() + 1);
+    }
+    
+    const id = newsletterScheduler.scheduleNewsletter(scheduledTime, cryptos);
+    
+    setScheduleStatus(`✅ Newsletter scheduled for TODAY at 5:50 PM! 
+    Time: ${scheduledTime.toLocaleString()}
+    The system will automatically send it at exactly that time.
+    Newsletter ID: ${id}`);
+  };
+
+import { newsletterScheduler } from '../services/newsletterScheduler';
+      const nextWednesday = getNextWednesdaySchedule();
+      const subject = `CryptoMonth Weekly Newsletter - ${nextSunday.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })}`;
+      
+      console.log('🔄 Creating scheduled broadcast for:', nextWednesday.toISOString());
+      const broadcast = await convertKit.createBroadcast(subject, html, nextWednesday);
+      
+      console.log('✅ Broadcast created:', broadcast);
+      console.log('📅 Scheduled for:', nextWednesday.toLocaleDateString('en-US', { 
+        weekday: 'long',
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      }));
+      
+      setScheduleStatus(`✅ Newsletter scheduled successfully! It will be sent on ${nextWednesday.toLocaleDateString('en-US', { 
+        weekday: 'long',
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      })} to all subscribers. Check ConvertKit Dashboard → Broadcasts - it should show as "Scheduled" not just "Draft".`);
+    } catch (error) {
+      console.error('Newsletter schedule error:', error);
+      setScheduleStatus(error instanceof Error ? error.message : 'Failed to schedule newsletter');
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const handleSendNewsletterDraft = async () => {
+    if (!isConvertKitConfigured) {
+      setSendStatus('ConvertKit is not fully configured. Please check environment variables.');
+      return;
+    }
+
+    setIsSending(true);
+    setSendStatus(null);
+    
+    try {
+      const html = generateNewsletterPreview(cryptos);
+      const currentDate = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      
+      const subject = `CryptoMonth Weekly Newsletter - ${currentDate}`;
+      
+      // Create broadcast in ConvertKit
+      const broadcast = await convertKit.createBroadcast(subject, html);
+      setSendStatus(`Newsletter draft created successfully! Go to ConvertKit Dashboard → Broadcasts to find "${subject}" and send it manually.`);
+    } catch (error) {
+      console.error('Newsletter send error:', error);
+      setSendStatus(error instanceof Error ? error.message : 'Failed to send newsletter');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleSendTestNewsletter = async () => {
+    const apiSecret = import.meta.env.VITE_CONVERTKIT_API_SECRET;
+    if (!isConvertKitConfigured || !apiSecret) {
+      setSendStatus('ConvertKit API secret is required for sending test newsletters. Please add VITE_CONVERTKIT_API_SECRET to your environment variables.');
+      return;
+    }
+
+    const testEmail = prompt('Enter your email address for the test newsletter:');
+    if (!testEmail) return;
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(testEmail)) {
+      setSendStatus('Please enter a valid email address.');
+      return;
+    }
+    
+    setIsSending(true);
+    setSendStatus(null);
+    
+    try {
+      await convertKit.sendTestNewsletter(testEmail, cryptos);
+      setSendStatus(`Test newsletter broadcast created successfully! Check ConvertKit Dashboard → Broadcasts to send it to ${testEmail}.`);
+    } catch (error) {
+      console.error('Test newsletter send error:', error);
+      setSendStatus(error instanceof Error ? error.message : 'Failed to send test newsletter');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      {!isConvertKitConfigured && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center space-x-2">
+          <AlertTriangle className="text-yellow-600" size={16} />
+          <span className="text-yellow-700 text-sm">ConvertKit not fully configured - newsletter features limited</span>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-xl font-bold text-gray-900">Newsletter Preview & Automation</h3>
+          <p className="text-gray-600">Preview, schedule, and manage your weekly newsletter</p>
+        </div>
+      </div>
+
+      {/* Automation Status */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center space-x-2 mb-2">
+          <Clock className="text-blue-600" size={16} />
+          <h4 className="font-semibold text-blue-900">Weekly Testing Schedule (Wednesdays 4:15 PM EST) - Next: {getNextWednesdaySchedule().toLocaleDateString('en-US', { 
+          <Zap className="text-blue-600" size={16} />
+          <h4 className="font-semibold text-blue-900">🚀 REAL Newsletter Automation - Test in 7 Minutes!</h4>
+        </div>
+        <p className="text-blue-800 text-sm mb-3">
+          <strong>🎯 NEW: Real Scheduling System!</strong> This will actually send newsletters automatically - no more just drafts!
+          The system runs in your browser and checks every minute for scheduled sends.
+        </p>
+        <div className="flex space-x-3">
+          <button
+            onClick={scheduleNewsletterIn7Minutes}
+            disabled={!isConvertKitConfigured}
+            className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50"
+          >
+            <Zap size={16} />
+            <span>🧪 TEST: Send in 7 Minutes</span>
+          </button>
+          <button
+            onClick={scheduleFor550PM}
+            disabled={!isConvertKitConfigured}
+            className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 disabled:opacity-50"
+          >
+            <Clock size={16} />
+            <span>📅 Schedule for 5:50 PM Today</span>
+          </button>
+        </div>
+        {(scheduleStatus || scheduleStatus) && (
+          <div className={`mt-3 p-3 rounded-lg text-sm ${
+            (scheduleStatus || scheduleStatus)!.includes('✅') 
+              ? 'bg-green-50 border border-green-200 text-green-700' 
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
+            {scheduleStatus || scheduleStatus}
+          </div>
+        )}
+        
+        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <h5 className="font-semibold text-green-800 mb-2">🚀 How This Real Automation Works:</h5>
+          <div className="text-green-700 text-sm space-y-1">
+            <p>• <strong>✅ Real Scheduling:</strong> System checks every minute for newsletters to send</p>
+            <p>• <strong>✅ Automatic Sending:</strong> Uses ConvertKit API to actually send (not just create drafts)</p>
+            <p>• <strong>✅ Browser Notifications:</strong> You'll see a green popup when newsletter sends</p>
+            <p>• <strong>✅ Console Logging:</strong> Check browser console for detailed send status</p>
+            <p>• <strong>✅ No Manual Work:</strong> Once scheduled, it sends automatically</p>
+            <p>• <strong>🧪 Test Mode:</strong> Try "Send in 7 Minutes" to verify it works!</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Preview & Manual Controls */}
+      <div className="flex space-x-3 mb-4">
+        <button
+          onClick={handlePreview}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+        >
+          <Eye size={16} />
+          <span>Preview</span>
+        </button>
+        <button
+          onClick={handleFullPreview}
+          className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200"
+        >
+          <Eye size={16} />
+          <span>Full Preview</span>
+        </button>
+        <button
+          onClick={handleDownload}
+          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+        >
+          <Download size={16} />
+          <span>Download HTML</span>
+        </button>
+        <button
+          onClick={handleSendNewsletterDraft}
+          disabled={isSending || !isConvertKitConfigured}
+          className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50"
+        >
+          {isSending ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          ) : (
+            <Mail size={16} />
+          )}
+          <span>{isSending ? 'Creating...' : 'Create Draft'}</span>
+        </button>
+        <button
+          onClick={handleSendTestNewsletter}
+          disabled={isSending || !isConvertKitConfigured}
+          className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 disabled:opacity-50"
+        >
+          {isSending ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          ) : (
+            <Send size={16} />
+          )}
+          <span>Send Test</span>
+        </button>
+      </div>
+
+      {sendStatus && (
+        <div className={`mb-4 p-3 rounded-lg ${
+          sendStatus.includes('successfully') 
+            ? 'bg-green-50 border border-green-200 text-green-700' 
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {sendStatus}
+        </div>
+      )}
+
+      {showPreview && (
+        <div className="mt-6">
+          <div className="border border-gray-300 rounded-lg overflow-hidden">
+            <div className="bg-gray-100 px-4 py-2 border-b border-gray-300">
+              <span className="text-sm font-medium text-gray-700">Newsletter Preview</span>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="float-right text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="h-96 overflow-auto">
+              <iframe
+                srcDoc={newsletterHTML}
+                className="w-full h-full border-none"
+                title="Newsletter Preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* How It Works */}
+      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+        <h4 className="font-semibold text-gray-900 mb-3">🤖 How Weekly Automation Works:</h4>
+        <div className="text-sm text-gray-700 space-y-2">
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600 font-bold">1.</span>
+            <span><strong>Testing Schedule:</strong> Every Wednesday at 4:15 PM EST, the system creates and sends a newsletter for testing purposes</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600 font-bold">2.</span>
+            <span><strong>Newsletter Generation:</strong> The system generates the HTML newsletter with the exact formatting you see in the preview</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600 font-bold">3.</span>
+            <span><strong>ConvertKit Delivery:</strong> At 4:15 PM EST, ConvertKit sends the newsletter to all subscribers using your custom formatting</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600 font-bold">4.</span>
+            <span><strong>Quality Assurance:</strong> The same HTML generator used for previews is used for live newsletters - no formatting differences</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+        <h4 className="font-semibold text-blue-900 mb-2">Newsletter Features:</h4>
+        <ul className="text-sm text-blue-800 space-y-1">
+          <li>• Market sentiment analysis with investment insights for top gainers and losers</li>
+          <li>• <strong>Click "Send in 7 Minutes"</strong> to schedule a test newsletter</li>
+          <li>• <strong>Watch the browser console</strong> for detailed logging every minute</li>
+          <li>• <strong>Look for green notification</strong> in top-right when it sends</li>
+          <li>• <strong>Check your email</strong> - you should receive the newsletter automatically</li>
+          <li>• <strong>Verify in ConvertKit</strong> - you'll see it actually sent (not just draft)</li>
+          <li>• <strong>No manual work needed</strong> - it's fully automated once scheduled</li>
+          <li>• <strong>Perfect for Sunday 9 AM</strong> - same system, different time</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
