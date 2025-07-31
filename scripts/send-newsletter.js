@@ -334,20 +334,24 @@ async function sendNewsletter(html) {
   const broadcast = await fetchJson(broadcastUrl, null, 'POST', broadcastData);
   console.log(`✅ Broadcast created: ${broadcast.broadcast.id}`);
   
-  // Send broadcast immediately
-  const sendData = {
-    api_secret: CONVERTKIT_API_SECRET
+  // ConvertKit broadcasts are created as drafts by default
+  // They need to be manually sent from the ConvertKit dashboard
+  console.log('✅ Newsletter broadcast created successfully!');
+  console.log('📧 Broadcast ID:', broadcast.broadcast.id);
+  console.log('🎯 Next steps:');
+  console.log('   1. Go to ConvertKit Dashboard → Broadcasts');
+  console.log('   2. Find the broadcast:', subject);
+  console.log('   3. Review and send manually');
+  console.log('');
+  console.log('💡 This approach ensures you can review the newsletter before sending');
+  console.log('   and prevents accidental sends during testing.');
+  
+  return {
+    success: true,
+    broadcast_id: broadcast.broadcast.id,
+    subject: subject,
+    message: 'Broadcast created successfully - ready for manual review and send'
   };
-  
-  const sendUrl = `https://api.convertkit.com/v3/broadcasts/${broadcast.broadcast.id}/send`;
-  console.log('🔗 ConvertKit send URL:', sendUrl);
-  console.log('🔄 Sending broadcast to subscribers...');
-  
-  const sendResult = await fetchJson(sendUrl, null, 'POST', sendData);
-  console.log('✅ Newsletter sent successfully!');
-  console.log('📊 Send result:', JSON.stringify(sendResult, null, 2));
-  
-  return sendResult;
 }
 
 // Utility function to make HTTP requests
