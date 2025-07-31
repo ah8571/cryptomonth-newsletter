@@ -477,7 +477,7 @@ function generateMarketSentimentAnalysis(cryptos) {
 
 // Remove fake news generation - we'll use real news or leave blank
 // This function is no longer used but kept for reference
-const generateFakeNewsQuotes = (crypto: { name: string; symbol: string; change: number; source: string }): Quote[] => {
+const generateFakeNewsQuotes = (crypto) => {
   // This function is deprecated - we now use real news APIs only
   return [];
 };
