@@ -271,10 +271,18 @@ function generateMarketSentimentAnalysis(cryptos) {
   const totalLosers = cryptos.filter(crypto => crypto.monthlyChange < 0).length;
   const gainerPercentage = ((totalGainers / (totalGainers + totalLosers)) * 100).toFixed(0);
   
-  // Categorize gainers by performance
-  const extremeGainers = topGainers.filter(crypto => crypto.monthlyChange > 200);
-  const strongGainers = topGainers.filter(crypto => crypto.monthlyChange >= 100 && crypto.monthlyChange <= 200);
-  const moderateGainers = topGainers.filter(crypto => crypto.monthlyChange >= 50 && crypto.monthlyChange < 100);
+  // Ensure we analyze ALL top 10 gainers by name
+  console.log('🔍 Top 10 gainers for analysis:');
+  topGainers.forEach((crypto, i) => {
+    console.log(`   ${i + 1}. ${crypto.name} (${crypto.symbol}): +${crypto.monthlyChange.toFixed(1)}%`);
+  });
+  
+  // Categorize ALL top 10 gainers by performance
+  const ultraExtremeGainers = topGainers.filter(crypto => crypto.monthlyChange > 1000); // 1000%+
+  const extremeGainers = topGainers.filter(crypto => crypto.monthlyChange >= 200 && crypto.monthlyChange <= 1000); // 200-1000%
+  const strongGainers = topGainers.filter(crypto => crypto.monthlyChange >= 100 && crypto.monthlyChange < 200); // 100-200%
+  const moderateGainers = topGainers.filter(crypto => crypto.monthlyChange >= 50 && crypto.monthlyChange < 100); // 50-100%
+  const minorGainers = topGainers.filter(crypto => crypto.monthlyChange > 0 && crypto.monthlyChange < 50); // 0-50%
   
   // Categorize losers by decline severity
   const severeDeclines = topLosers.filter(crypto => crypto.monthlyChange < -50);
@@ -318,49 +326,59 @@ function generateMarketSentimentAnalysis(cryptos) {
   
   // Helper function to create source links
   const createSourceLink = (crypto) => {
+    // Use the first quote's source and link if available
+    if (crypto.quotes && crypto.quotes.length > 0) {
+      const quote = crypto.quotes[0];
+      return `<a href="${quote.link}" style="color: #1d4ed8; text-decoration: none;">${quote.source}</a>`;
+    }
+    // Fallback to CryptoMonth if no quotes available
     return `<a href="https://cryptomonth.info#${crypto.id}" style="color: #1d4ed8; text-decoration: none;">CryptoMonth Analysis</a>`;
+  };
+  
+  // Helper function to get a different source link (for variety)
+  const createAlternateSourceLink = (crypto, index = 1) => {
+    if (crypto.quotes && crypto.quotes.length > index) {
+      const quote = crypto.quotes[index];
+      return `<a href="${quote.link}" style="color: #1d4ed8; text-decoration: none;">${quote.source}</a>`;
+    }
+    return createSourceLink(crypto);
   };
   
   // Build comprehensive analysis
   let analysis = `The cryptocurrency market shows ${gainerPercentage >= 70 ? 'exceptional' : gainerPercentage >= 60 ? 'strong' : gainerPercentage >= 50 ? 'moderate' : 'mixed'} momentum this month (${gainerPercentage}% gainers), led by ${topGainers[0]?.name} with ${topGainers[0]?.monthlyChange > 200 ? 'an extraordinary' : topGainers[0]?.monthlyChange > 100 ? 'an impressive' : 'a solid'} +${topGainers[0]?.monthlyChange.toFixed(1)}% gain (${createSourceLink(topGainers[0])}). `;
   
-  // Analyze extreme gainers
+  // Analyze ultra-extreme gainers (1000%+) - these are moonshots like Ethereal
+  if (ultraExtremeGainers.length > 0) {
+    analysis += `Ultra-extreme moonshot performers include ${ultraExtremeGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(0)}%)`).join(', ')}, representing extraordinary discoveries with extreme volatility and potential manipulation risks (${createSourceLink(ultraExtremeGainers[0])}). `;
+  }
+  
+  // Analyze extreme gainers (200-1000%)
   if (extremeGainers.length > 0) {
-    // Include ultra-high performers first
-    const ultraHigh = extremeGainers.filter(crypto => crypto.monthlyChange > 1000);
-    const regular = extremeGainers.filter(crypto => crypto.monthlyChange <= 1000);
-    
-    if (ultraHigh.length > 0) {
-      analysis += `Ultra-extreme performers include ${ultraHigh.slice(0, 2).map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')}, representing extraordinary moonshot discoveries with extreme volatility risk (${createSourceLink(ultraHigh[0])}). `;
-    }
-    
-    if (regular.length > 0) {
-      analysis += `Extreme performers include ${regular.slice(0, 3).map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')}, indicating significant market speculation and potential moonshot discoveries (${createSourceLink(regular[0])}). `;
-    }
+    analysis += `Extreme performers include ${extremeGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')}, indicating significant market speculation and potential moonshot discoveries (${createSourceLink(extremeGainers[0])}). `;
   }
   
-  // Special handling for ultra-high performers
-  if (themes.highPerformers.length > 0) {
-    analysis += `Notable ultra-high performers like ${themes.highPerformers.slice(0, 2).map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(0)}%)`).join(' and ')} represent rare moonshot opportunities but carry extreme volatility and potential manipulation risks (${createSourceLink(themes.highPerformers[0])}). `;
-  }
-  
-  // Analyze strong gainers
+  // Analyze strong gainers (100-200%)
   if (strongGainers.length > 0) {
-    analysis += `Strong performers ${strongGainers.slice(0, 3).map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} demonstrate sustained institutional interest in utility-driven cryptocurrencies (${createSourceLink(strongGainers[0])}). `;
+    analysis += `Strong performers ${strongGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} demonstrate sustained institutional interest in utility-driven cryptocurrencies (${createAlternateSourceLink(strongGainers[0])}). `;
   }
   
-  // Analyze moderate gainers
+  // Analyze moderate gainers (50-100%)
   if (moderateGainers.length > 0) {
-    analysis += `Moderate gainers including ${moderateGainers.slice(0, 2).map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} show healthy market expansion across established projects (${createSourceLink(moderateGainers[0])}). `;
+    analysis += `Moderate gainers including ${moderateGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} show healthy market expansion across established projects (${createAlternateSourceLink(moderateGainers[0], 1)}). `;
+  }
+  
+  // Analyze minor gainers (0-50%) if any in top 10
+  if (minorGainers.length > 0) {
+    analysis += `Steady performers ${minorGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} show consistent growth in established markets (${createSourceLink(minorGainers[0])}). `;
   }
   
   // Theme analysis
   if (themes.ethereum.length > 0) {
-    analysis += `Ethereum ecosystem tokens are particularly strong with ${themes.ethereum.length} projects in the top 10, including ${themes.ethereum.slice(0, 2).map(crypto => crypto.name).join(' and ')}, reflecting continued ETH staking and Layer 2 adoption (${createSourceLink(themes.ethereum[0])}). `;
+    analysis += `Ethereum ecosystem tokens are particularly strong with ${themes.ethereum.length} projects in the top 10, including ${themes.ethereum.slice(0, 2).map(crypto => crypto.name).join(' and ')}, reflecting continued ETH staking and Layer 2 adoption (${createAlternateSourceLink(themes.ethereum[0], 0)}). `;
   }
   
   if (themes.defi.length > 0) {
-    analysis += `DeFi protocols show renewed strength with ${themes.defi.slice(0, 2).map(crypto => crypto.name).join(' and ')} leading the charge, suggesting increased yield farming and liquidity provision activity (${createSourceLink(themes.defi[0])}). `;
+    analysis += `DeFi protocols show renewed strength with ${themes.defi.slice(0, 2).map(crypto => crypto.name).join(' and ')} leading the charge, suggesting increased yield farming and liquidity provision activity (${createAlternateSourceLink(themes.defi[0], 1)}). `;
   }
   
   if (themes.meme.length > 0) {
@@ -369,9 +387,9 @@ function generateMarketSentimentAnalysis(cryptos) {
   
   // Risk analysis for extreme gainers
   if (extremeGainers.length > 0) {
-    analysis += `However, investors should exercise extreme caution with triple-digit gainers like ${extremeGainers[0]?.name}, as such explosive moves often indicate high volatility, potential market manipulation, and significant correction risk (${createSourceLink(extremeGainers[0])}). `;
+    analysis += `However, investors should exercise extreme caution with triple-digit gainers like ${extremeGainers[0]?.name}, as such explosive moves often indicate high volatility, potential market manipulation, and significant correction risk (${createAlternateSourceLink(extremeGainers[0], 1)}). `;
   } else if (topGainers[0] && topGainers[0].monthlyChange > 100) {
-    analysis += `Investors should remain cautious with high-momentum plays like ${topGainers[0].name}, as substantial gains can quickly reverse in volatile crypto markets (${createSourceLink(topGainers[0])}). `;
+    analysis += `Investors should remain cautious with high-momentum plays like ${topGainers[0].name}, as substantial gains can quickly reverse in volatile crypto markets (${createAlternateSourceLink(topGainers[0], 1)}). `;
   }
   
   // Analyze top losers with more detail
@@ -381,16 +399,16 @@ function generateMarketSentimentAnalysis(cryptos) {
     }
     
     if (moderateDeclines.length > 0) {
-      analysis += `Moderate declines in ${moderateDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} may present contrarian opportunities for experienced investors willing to accept elevated risk (${createSourceLink(moderateDeclines[0])}). `;
+      analysis += `Moderate declines in ${moderateDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} may present contrarian opportunities for experienced investors willing to accept elevated risk (${createAlternateSourceLink(moderateDeclines[0], 0)}). `;
     }
     
     if (minorDeclines.length > 0) {
-      analysis += `Minor pullbacks in established projects like ${minorDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} could indicate healthy profit-taking rather than fundamental weakness (${createSourceLink(minorDeclines[0])}). `;
+      analysis += `Minor pullbacks in established projects like ${minorDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} could indicate healthy profit-taking rather than fundamental weakness (${createAlternateSourceLink(minorDeclines[0], 1)}). `;
     }
   }
   
   // Investment strategy conclusion
-  analysis += `Investment insight: This market environment favors ${gainerPercentage >= 60 ? 'selective momentum strategies with strong risk management' : 'defensive positioning with careful opportunity selection'}, emphasizing thorough due diligence, position sizing discipline, and the critical importance of taking profits on extreme gainers while maintaining exposure to fundamentally strong projects with sustainable growth trajectories (${createSourceLink(topGainers[0])}).`;
+  analysis += `Investment insight: This market environment favors ${gainerPercentage >= 60 ? 'selective momentum strategies with strong risk management' : 'defensive positioning with careful opportunity selection'}, emphasizing thorough due diligence, position sizing discipline, and the critical importance of taking profits on extreme gainers while maintaining exposure to fundamentally strong projects with sustainable growth trajectories (${createAlternateSourceLink(topGainers[0], 2)}).`;
   
   return analysis;
 }
