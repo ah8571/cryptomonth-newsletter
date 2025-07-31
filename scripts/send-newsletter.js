@@ -3,8 +3,21 @@
 // Weekly Newsletter Automation Script
 // This runs every Sunday at 9 AM EST via GitHub Actions
 
-const https = require('https');
-const fs = require('fs');
+import https from 'https';
+import fs from 'fs';
+
+// Add process error handlers
+process.on('uncaughtException', (error) => {
+  console.error('❌ UNCAUGHT EXCEPTION:', error);
+  console.error('Stack trace:', error.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION at:', promise);
+  console.error('Reason:', reason);
+  process.exit(1);
+});
 
 // Configuration from environment variables
 const CONVERTKIT_API_KEY = process.env.CONVERTKIT_API_KEY;
@@ -14,10 +27,17 @@ const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
 console.log('🚀 Starting weekly CryptoMonth newsletter automation...');
 console.log('📅 Current time:', new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+console.log('🔍 Environment check:');
+console.log('   CONVERTKIT_API_KEY:', CONVERTKIT_API_KEY ? 'SET' : 'MISSING');
+console.log('   CONVERTKIT_API_SECRET:', CONVERTKIT_API_SECRET ? 'SET' : 'MISSING');
+console.log('   CONVERTKIT_FORM_ID:', CONVERTKIT_FORM_ID ? 'SET' : 'MISSING');
+console.log('   COINMARKETCAP_API_KEY:', COINMARKETCAP_API_KEY ? 'SET' : 'NOT SET (optional)');
 
 // Validate environment variables
 if (!CONVERTKIT_API_KEY || !CONVERTKIT_API_SECRET || !CONVERTKIT_FORM_ID) {
   console.error('❌ Missing ConvertKit environment variables');
+  console.error('   Required: CONVERTKIT_API_KEY, CONVERTKIT_API_SECRET, CONVERTKIT_FORM_ID');
+  console.error('   Check GitHub Secrets configuration');
   process.exit(1);
 }
 
@@ -30,7 +50,9 @@ async function fetchCryptoData() {
   // 1. Fetch CoinGecko data (reliable baseline)
   try {
     console.log('📊 Fetching CoinGecko data...');
-    const coinGeckoData = await fetchJson('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=7d%2C30d&locale=en');
+    const coinGeckoUrl = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=7d%2C30d&locale=en';
+    console.log('🔗 CoinGecko URL:', coinGeckoUrl);
+    const coinGeckoData = await fetchJson(coinGeckoUrl);
     
     const processedCoinGecko = coinGeckoData.map(crypto => ({
       id: crypto.id,
@@ -46,14 +68,18 @@ async function fetchCryptoData() {
     allData.push(...processedCoinGecko);
     console.log(`✅ CoinGecko: ${processedCoinGecko.length} cryptocurrencies`);
   } catch (error) {
-    console.error('⚠️ CoinGecko fetch failed:', error.message);
+    console.error('❌ CoinGecko fetch failed:', error.message);
+    console.error('   Stack trace:', error.stack);
+    // Don't exit here, try other sources
   }
   
   // 2. Fetch CoinMarketCap data (if API key available)
   if (COINMARKETCAP_API_KEY) {
     try {
       console.log('📊 Fetching CoinMarketCap data...');
-      const cmcData = await fetchJson('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?start=1&limit=1000&convert=USD&sort=percent_change_30d', {
+      const cmcUrl = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?start=1&limit=1000&convert=USD&sort=percent_change_30d';
+      console.log('🔗 CoinMarketCap URL:', cmcUrl);
+      const cmcData = await fetchJson(cmcUrl, {
         'X-CMC_PRO_API_KEY': COINMARKETCAP_API_KEY,
         'Accept': 'application/json'
       });
@@ -72,14 +98,20 @@ async function fetchCryptoData() {
       allData.push(...processedCMC);
       console.log(`✅ CoinMarketCap: ${processedCMC.length} cryptocurrencies`);
     } catch (error) {
-      console.error('⚠️ CoinMarketCap fetch failed:', error.message);
+      console.error('❌ CoinMarketCap fetch failed:', error.message);
+      console.error('   Stack trace:', error.stack);
+      // Don't exit here, try other sources
     }
+  } else {
+    console.log('ℹ️ CoinMarketCap API key not provided, skipping...');
   }
   
   // 3. Fetch DexScreener trending pairs
   try {
     console.log('📊 Fetching DexScreener data...');
-    const dexData = await fetchJson('https://api.dexscreener.com/latest/dex/tokens/trending');
+    const dexUrl = 'https://api.dexscreener.com/latest/dex/tokens/trending';
+    console.log('🔗 DexScreener URL:', dexUrl);
+    const dexData = await fetchJson(dexUrl);
     
     if (dexData.pairs && Array.isArray(dexData.pairs)) {
       const processedDex = dexData.pairs
@@ -98,9 +130,13 @@ async function fetchCryptoData() {
       
       allData.push(...processedDex);
       console.log(`✅ DexScreener: ${processedDex.length} pairs`);
+    } else {
+      console.log('⚠️ DexScreener: No pairs data found in response');
     }
   } catch (error) {
-    console.error('⚠️ DexScreener fetch failed:', error.message);
+    console.error('❌ DexScreener fetch failed:', error.message);
+    console.error('   Stack trace:', error.stack);
+    // Don't exit here, continue with available data
   }
   
   // Remove duplicates and sort by absolute change
@@ -123,6 +159,9 @@ async function fetchCryptoData() {
     const topLoser = finalData.find(c => c.monthlyChange < 0);
     console.log(`🚀 Top gainer: ${topGainer?.name} (+${topGainer?.monthlyChange.toFixed(1)}%)`);
     console.log(`📉 Biggest loser: ${topLoser?.name} (${topLoser?.monthlyChange.toFixed(1)}%)`);
+  } else {
+    console.error('❌ No cryptocurrency data available after processing');
+    throw new Error('No cryptocurrency data available - all API sources failed or returned empty data');
   }
   
   return finalData;
@@ -268,12 +307,15 @@ function generateMarketSentimentAnalysis(cryptos) {
 // Send newsletter via ConvertKit
 async function sendNewsletter(html) {
   console.log('📧 Creating and sending newsletter via ConvertKit...');
+  console.log('📊 Newsletter HTML length:', html.length, 'characters');
   
   const subject = `CryptoMonth Weekly Newsletter - ${new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   })}`;
+  
+  console.log('📧 Newsletter subject:', subject);
   
   // Create broadcast
   const broadcastData = {
@@ -283,7 +325,13 @@ async function sendNewsletter(html) {
     description: `Auto-sent weekly newsletter - ${new Date().toISOString()}`
   };
   
-  const broadcast = await fetchJson('https://api.convertkit.com/v3/broadcasts', null, 'POST', broadcastData);
+  console.log('🔄 Creating ConvertKit broadcast...');
+  console.log('📊 Broadcast data keys:', Object.keys(broadcastData));
+  
+  const broadcastUrl = 'https://api.convertkit.com/v3/broadcasts';
+  console.log('🔗 ConvertKit broadcast URL:', broadcastUrl);
+  
+  const broadcast = await fetchJson(broadcastUrl, null, 'POST', broadcastData);
   console.log(`✅ Broadcast created: ${broadcast.broadcast.id}`);
   
   // Send broadcast immediately
@@ -291,14 +339,27 @@ async function sendNewsletter(html) {
     api_secret: CONVERTKIT_API_SECRET
   };
   
-  const sendResult = await fetchJson(`https://api.convertkit.com/v3/broadcasts/${broadcast.broadcast.id}/send`, null, 'POST', sendData);
+  const sendUrl = `https://api.convertkit.com/v3/broadcasts/${broadcast.broadcast.id}/send`;
+  console.log('🔗 ConvertKit send URL:', sendUrl);
+  console.log('🔄 Sending broadcast to subscribers...');
+  
+  const sendResult = await fetchJson(sendUrl, null, 'POST', sendData);
   console.log('✅ Newsletter sent successfully!');
+  console.log('📊 Send result:', JSON.stringify(sendResult, null, 2));
   
   return sendResult;
 }
 
 // Utility function to make HTTP requests
 function fetchJson(url, headers = {}, method = 'GET', body = null) {
+  console.log(`🌐 Making ${method} request to: ${url}`);
+  if (headers && Object.keys(headers).length > 0) {
+    console.log('📋 Request headers:', Object.keys(headers));
+  }
+  if (body) {
+    console.log('📦 Request body size:', JSON.stringify(body).length, 'characters');
+  }
+  
   return new Promise((resolve, reject) => {
     const urlObj = new URL(url);
     const options = {
@@ -314,23 +375,35 @@ function fetchJson(url, headers = {}, method = 'GET', body = null) {
     };
     
     const req = https.request(options, (res) => {
+      console.log(`📡 Response status: ${res.statusCode} ${res.statusMessage}`);
+      console.log('📋 Response headers:', Object.keys(res.headers || {}));
+      
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
+        console.log(`📦 Response data length: ${data.length} characters`);
+        
         try {
           const parsed = JSON.parse(data);
           if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log('✅ Request successful');
             resolve(parsed);
           } else {
+            console.error(`❌ HTTP Error ${res.statusCode}:`, parsed.message || data);
             reject(new Error(`HTTP ${res.statusCode}: ${parsed.message || data}`));
           }
         } catch (e) {
-          reject(new Error(`Invalid JSON response: ${data}`));
+          console.error('❌ Invalid JSON response:', data.substring(0, 500));
+          reject(new Error(`Invalid JSON response: ${data.substring(0, 200)}...`));
         }
       });
     });
     
-    req.on('error', reject);
+    req.on('error', (error) => {
+      console.error('❌ Request error:', error.message);
+      console.error('   Stack trace:', error.stack);
+      reject(error);
+    });
     
     if (body) {
       req.write(JSON.stringify(body));
@@ -343,18 +416,28 @@ function fetchJson(url, headers = {}, method = 'GET', body = null) {
 // Main execution
 async function main() {
   try {
+    console.log('🎯 Starting main execution...');
+    
     // Fetch cryptocurrency data
+    console.log('📊 Step 1: Fetching cryptocurrency data...');
     const cryptos = await fetchCryptoData();
     
     if (cryptos.length === 0) {
+      console.error('❌ No cryptocurrency data available');
       throw new Error('No cryptocurrency data available');
     }
     
+    console.log(`✅ Step 1 complete: ${cryptos.length} cryptocurrencies loaded`);
+    
     // Generate newsletter HTML
+    console.log('📝 Step 2: Generating newsletter HTML...');
     const html = generateNewsletterHTML(cryptos);
+    console.log(`✅ Step 2 complete: Newsletter HTML generated (${html.length} characters)`);
     
     // Send newsletter
+    console.log('📧 Step 3: Sending newsletter...');
     await sendNewsletter(html);
+    console.log('✅ Step 3 complete: Newsletter sent successfully');
     
     console.log('🎉 Weekly newsletter sent successfully!');
     console.log(`📊 Included ${cryptos.length} cryptocurrencies`);
@@ -362,9 +445,23 @@ async function main() {
     
   } catch (error) {
     console.error('❌ Newsletter automation failed:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Stack trace:', error.stack);
+    
+    // Additional debugging info
+    console.error('🔍 Debug information:');
+    console.error('   Node version:', process.version);
+    console.error('   Platform:', process.platform);
+    console.error('   Current working directory:', process.cwd());
+    console.error('   Environment variables check:');
+    console.error('     CONVERTKIT_API_KEY:', process.env.CONVERTKIT_API_KEY ? 'SET' : 'MISSING');
+    console.error('     CONVERTKIT_API_SECRET:', process.env.CONVERTKIT_API_SECRET ? 'SET' : 'MISSING');
+    console.error('     CONVERTKIT_FORM_ID:', process.env.CONVERTKIT_FORM_ID ? 'SET' : 'MISSING');
+    
     process.exit(1);
   }
 }
 
 // Run the script
+console.log('🚀 Initializing newsletter automation script...');
 main();
