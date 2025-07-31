@@ -263,29 +263,106 @@ function generateNewsletterHTML(cryptos) {
 
 // Generate market sentiment analysis
 function generateMarketSentimentAnalysis(cryptos) {
-  const topGainers = cryptos.filter(crypto => crypto.monthlyChange > 0).slice(0, 5);
-  const topLosers = cryptos.filter(crypto => crypto.monthlyChange < 0).slice(0, 3);
+  const topGainers = cryptos.filter(crypto => crypto.monthlyChange > 0).slice(0, 10);
+  const topLosers = cryptos.filter(crypto => crypto.monthlyChange < 0).slice(0, 5);
   
-  let analysis = `The top 5 gainers this month show strong momentum with ${topGainers[0]?.name} leading at +${topGainers[0]?.monthlyChange.toFixed(1)}%. `;
+  // Calculate market breadth
+  const totalGainers = cryptos.filter(crypto => crypto.monthlyChange > 0).length;
+  const totalLosers = cryptos.filter(crypto => crypto.monthlyChange < 0).length;
+  const gainerPercentage = ((totalGainers / (totalGainers + totalLosers)) * 100).toFixed(0);
   
-  // Analyze themes in top gainers
-  if (topGainers.length >= 3) {
-    analysis += `Notable performers include ${topGainers[1]?.name} (+${topGainers[1]?.monthlyChange.toFixed(1)}%) and ${topGainers[2]?.name} (+${topGainers[2]?.monthlyChange.toFixed(1)}%), indicating continued institutional interest in utility-driven cryptocurrencies. `;
+  // Categorize gainers by performance
+  const extremeGainers = topGainers.filter(crypto => crypto.monthlyChange > 200);
+  const strongGainers = topGainers.filter(crypto => crypto.monthlyChange >= 100 && crypto.monthlyChange <= 200);
+  const moderateGainers = topGainers.filter(crypto => crypto.monthlyChange >= 50 && crypto.monthlyChange < 100);
+  
+  // Categorize losers by decline severity
+  const severeDeclines = topLosers.filter(crypto => crypto.monthlyChange < -50);
+  const moderateDeclines = topLosers.filter(crypto => crypto.monthlyChange >= -50 && crypto.monthlyChange < -20);
+  const minorDeclines = topLosers.filter(crypto => crypto.monthlyChange >= -20);
+  
+  // Detect themes in top performers
+  const themes = {
+    ethereum: topGainers.filter(crypto => 
+      crypto.name.toLowerCase().includes('eth') || 
+      crypto.symbol.toLowerCase().includes('eth') ||
+      crypto.name.toLowerCase().includes('ethereum')
+    ),
+    defi: topGainers.filter(crypto => 
+      crypto.name.toLowerCase().includes('defi') ||
+      crypto.name.toLowerCase().includes('curve') ||
+      crypto.name.toLowerCase().includes('convex') ||
+      crypto.name.toLowerCase().includes('uniswap') ||
+      crypto.name.toLowerCase().includes('1inch')
+    ),
+    meme: topGainers.filter(crypto => 
+      crypto.name.toLowerCase().includes('bonk') ||
+      crypto.name.toLowerCase().includes('floki') ||
+      crypto.name.toLowerCase().includes('mog') ||
+      crypto.name.toLowerCase().includes('pengu')
+    ),
+    exchange: topGainers.filter(crypto => 
+      crypto.name.toLowerCase().includes('cronos') ||
+      crypto.name.toLowerCase().includes('okb') ||
+      crypto.symbol.toLowerCase() === 'cro'
+    )
+  };
+  
+  // Build comprehensive analysis
+  let analysis = `The cryptocurrency market shows ${gainerPercentage >= 70 ? 'exceptional' : gainerPercentage >= 60 ? 'strong' : gainerPercentage >= 50 ? 'moderate' : 'mixed'} momentum this month (${gainerPercentage}% gainers), led by ${topGainers[0]?.name} with ${topGainers[0]?.monthlyChange > 200 ? 'an extraordinary' : topGainers[0]?.monthlyChange > 100 ? 'an impressive' : 'a solid'} +${topGainers[0]?.monthlyChange.toFixed(1)}% gain. `;
+  
+  // Analyze extreme gainers
+  if (extremeGainers.length > 0) {
+    analysis += `Extreme performers include ${extremeGainers.slice(0, 3).map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')}, indicating significant market speculation and potential moonshot discoveries. `;
   }
   
-  // Add risk analysis
-  if (topGainers[0] && topGainers[0].monthlyChange > 100) {
-    analysis += `However, investors should exercise caution with extreme gainers like ${topGainers[0].name}, as triple-digit gains often indicate high volatility and potential for significant corrections. `;
+  // Analyze strong gainers
+  if (strongGainers.length > 0) {
+    analysis += `Strong performers ${strongGainers.slice(0, 3).map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} demonstrate sustained institutional interest in utility-driven cryptocurrencies. `;
   }
   
-  // Analyze losers
+  // Analyze moderate gainers
+  if (moderateGainers.length > 0) {
+    analysis += `Moderate gainers including ${moderateGainers.slice(0, 2).map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} show healthy market expansion across established projects. `;
+  }
+  
+  // Theme analysis
+  if (themes.ethereum.length > 0) {
+    analysis += `Ethereum ecosystem tokens are particularly strong with ${themes.ethereum.length} projects in the top 10, including ${themes.ethereum.slice(0, 2).map(crypto => crypto.name).join(' and ')}, reflecting continued ETH staking and Layer 2 adoption. `;
+  }
+  
+  if (themes.defi.length > 0) {
+    analysis += `DeFi protocols show renewed strength with ${themes.defi.slice(0, 2).map(crypto => crypto.name).join(' and ')} leading the charge, suggesting increased yield farming and liquidity provision activity. `;
+  }
+  
+  if (themes.meme.length > 0) {
+    analysis += `Meme token resurgence is evident with ${themes.meme.slice(0, 2).map(crypto => crypto.name).join(' and ')} posting significant gains, indicating retail investor enthusiasm and social media-driven momentum. `;
+  }
+  
+  // Risk analysis for extreme gainers
+  if (extremeGainers.length > 0) {
+    analysis += `However, investors should exercise extreme caution with triple-digit gainers like ${extremeGainers[0]?.name}, as such explosive moves often indicate high volatility, potential market manipulation, and significant correction risk. `;
+  } else if (topGainers[0] && topGainers[0].monthlyChange > 100) {
+    analysis += `Investors should remain cautious with high-momentum plays like ${topGainers[0].name}, as substantial gains can quickly reverse in volatile crypto markets. `;
+  }
+  
+  // Analyze top losers with more detail
   if (topLosers.length > 0) {
-    analysis += `The biggest losers include ${topLosers[0]?.name} (${topLosers[0]?.monthlyChange.toFixed(1)}%)`;
-    if (topLosers.length > 1) {
-      analysis += ` and ${topLosers[1]?.name} (${topLosers[1]?.monthlyChange.toFixed(1)}%)`;
+    if (severeDeclines.length > 0) {
+      analysis += `Severe declines are led by ${severeDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')}, suggesting fundamental issues or market-specific challenges requiring careful analysis. `;
     }
-    analysis += `, highlighting the importance of thorough due diligence and risk management in cryptocurrency investments.`;
+    
+    if (moderateDeclines.length > 0) {
+      analysis += `Moderate declines in ${moderateDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} may present contrarian opportunities for experienced investors willing to accept elevated risk. `;
+    }
+    
+    if (minorDeclines.length > 0) {
+      analysis += `Minor pullbacks in established projects like ${minorDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} could indicate healthy profit-taking rather than fundamental weakness. `;
+    }
   }
+  
+  // Investment strategy conclusion
+  analysis += `Investment insight: This market environment favors ${gainerPercentage >= 60 ? 'selective momentum strategies with strong risk management' : 'defensive positioning with careful opportunity selection'}, emphasizing thorough due diligence, position sizing discipline, and the critical importance of taking profits on extreme gainers while maintaining exposure to fundamentally strong projects with sustainable growth trajectories.`;
   
   return analysis;
 }
