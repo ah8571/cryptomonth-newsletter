@@ -227,38 +227,26 @@ function generateNewsletterHTML(cryptos) {
             <p style="margin-bottom: 25px; color: #374151; line-height: 1.6;">Check out CryptoMonth.info for more information about the top 500 gains and 100 losses this month for investment insight.</p>
 
             <h2 class="section-title">Top 50 Gainers (30 Days)</h2>
-            <div class="chart-container">
+            <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
                 ${topGainers.map((crypto, index) => `
-                    <div class="crypto-row">
-                        <div class="rank">#${index + 1}</div>
-                        <div class="crypto-info">
-                            <a href="https://cryptomonth.info#${crypto.id}" class="crypto-symbol">${crypto.symbol}</a>
-                            <div class="crypto-name">${crypto.name}</div>
-                        </div>
-                        <div class="performance">
-                            <div class="change-30d positive">+${crypto.monthlyChange.toFixed(1)}%</div>
-                            <div class="change-7d">7d: ${crypto.weeklyChange > 0 ? '+' : ''}${crypto.weeklyChange.toFixed(1)}%</div>
-                        </div>
-                        <div class="price">$${crypto.currentPrice < 0.01 ? crypto.currentPrice.toFixed(6) : crypto.currentPrice.toLocaleString()}</div>
-                    </div>
+                    <p style="margin: 8px 0; padding: 12px; background-color: white; border-radius: 8px; border-left: 4px solid #10b981;">
+                        <strong style="color: #1f2937;">#${index + 1} - <a href="https://cryptomonth.info#${crypto.id}" style="color: #1d4ed8; text-decoration: none; font-weight: bold;">${crypto.symbol}</a> (${crypto.name})</strong><br>
+                        <span style="color: #10b981; font-weight: bold; font-size: 16px;">+${crypto.monthlyChange.toFixed(1)}%</span> (30 days) | 
+                        <span style="color: #6b7280;">7d: ${crypto.weeklyChange > 0 ? '+' : ''}${crypto.weeklyChange.toFixed(1)}%</span> | 
+                        <span style="color: #374151; font-weight: 500;">$${crypto.currentPrice < 0.01 ? crypto.currentPrice.toFixed(6) : crypto.currentPrice.toLocaleString()}</span>
+                    </p>
                 `).join('')}
             </div>
 
             <h2 class="section-title">Top 10 Losers (30 Days)</h2>
-            <div class="chart-container">
+            <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
                 ${topLosers.map((crypto, index) => `
-                    <div class="crypto-row">
-                        <div class="rank">#${index + 1}</div>
-                        <div class="crypto-info">
-                            <a href="https://cryptomonth.info#${crypto.id}" class="crypto-symbol">${crypto.symbol}</a>
-                            <div class="crypto-name">${crypto.name}</div>
-                        </div>
-                        <div class="performance">
-                            <div class="change-30d negative">${crypto.monthlyChange.toFixed(1)}%</div>
-                            <div class="change-7d">7d: ${crypto.weeklyChange > 0 ? '+' : ''}${crypto.weeklyChange.toFixed(1)}%</div>
-                        </div>
-                        <div class="price">$${crypto.currentPrice < 0.01 ? crypto.currentPrice.toFixed(6) : crypto.currentPrice.toLocaleString()}</div>
-                    </div>
+                    <p style="margin: 8px 0; padding: 12px; background-color: white; border-radius: 8px; border-left: 4px solid #ef4444;">
+                        <strong style="color: #1f2937;">#${index + 1} - <a href="https://cryptomonth.info#${crypto.id}" style="color: #1d4ed8; text-decoration: none; font-weight: bold;">${crypto.symbol}</a> (${crypto.name})</strong><br>
+                        <span style="color: #ef4444; font-weight: bold; font-size: 16px;">${crypto.monthlyChange.toFixed(1)}%</span> (30 days) | 
+                        <span style="color: #6b7280;">7d: ${crypto.weeklyChange > 0 ? '+' : ''}${crypto.weeklyChange.toFixed(1)}%</span> | 
+                        <span style="color: #374151; font-weight: 500;">$${crypto.currentPrice < 0.01 ? crypto.currentPrice.toFixed(6) : crypto.currentPrice.toLocaleString()}</span>
+                    </p>
                 `).join('')}
             </div>
         </div>
@@ -266,8 +254,6 @@ function generateNewsletterHTML(cryptos) {
         <div class="footer">
             <p>This newsletter is generated from CryptoMonth's analysis of cryptocurrency news and market data.</p>
             <p>Visit <a href="https://cryptomonth.info" style="color: #1d4ed8;">CryptoMonth.info</a> for real-time updates and detailed analysis.</p>
-            <p>Powered by <a href="https://convertkit.com" style="color: #1d4ed8;">ConvertKit</a></p>
-            <p><a href="%%unsubscribe_url%%" class="unsubscribe">Unsubscribe</a> | <a href="%%manage_preferences_url%%" class="unsubscribe">Update Preferences</a></p>
         </div>
     </div>
 </body>
