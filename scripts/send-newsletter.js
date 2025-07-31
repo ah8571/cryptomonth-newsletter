@@ -59,8 +59,8 @@ async function fetchCryptoData() {
       name: crypto.name,
       symbol: crypto.symbol.toUpperCase(),
       currentPrice: crypto.current_price,
-      monthlyChange: crypto.price_change_percentage_30d || 0,
-      weeklyChange: crypto.price_change_percentage_7d_in_currency || 0,
+      monthlyChange: crypto.price_change_percentage_30d_in_currency || crypto.price_change_percentage_30d || 0,
+      weeklyChange: crypto.price_change_percentage_7d_in_currency || crypto.price_change_percentage_7d || 0,
       marketCapRank: crypto.market_cap_rank,
       source: 'CoinGecko'
     }));
@@ -149,7 +149,7 @@ async function fetchCryptoData() {
   });
   
   const finalData = Array.from(uniqueData.values())
-    .filter(crypto => Math.abs(crypto.monthlyChange) > 0.1)
+    .filter(crypto => crypto.monthlyChange !== null && crypto.monthlyChange !== undefined && Math.abs(crypto.monthlyChange) > 0.01)
     .sort((a, b) => Math.abs(b.monthlyChange) - Math.abs(a.monthlyChange));
   
   console.log(`📊 Final dataset: ${finalData.length} unique cryptocurrencies`);
