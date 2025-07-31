@@ -230,7 +230,7 @@ function generateNewsletterHTML(cryptos) {
             <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
                 ${topGainers.map((crypto, index) => `
                     <p style="margin: 8px 0; padding: 12px; background-color: white; border-radius: 8px; border-left: 4px solid #10b981;">
-                        <strong style="color: #1f2937;">#${index + 1} - <a href="https://cryptomonth.info#${crypto.id}" style="color: #1d4ed8; text-decoration: none; font-weight: bold;">${crypto.symbol}</a> (${crypto.name})</strong><br>
+                        <strong style="color: #1f2937;">#${index + 1} - <a href="https://cryptomonth.info/#${crypto.id}" style="color: #1d4ed8; text-decoration: none; font-weight: bold;">${crypto.symbol}</a> (${crypto.name})</strong><br>
                         <span style="color: #10b981; font-weight: bold; font-size: 16px;">+${crypto.monthlyChange.toFixed(1)}%</span> (30 days) | 
                         <span style="color: #6b7280;">7d: ${crypto.weeklyChange > 0 ? '+' : ''}${crypto.weeklyChange.toFixed(1)}%</span> | 
                         <span style="color: #374151; font-weight: 500;">$${crypto.currentPrice < 0.01 ? crypto.currentPrice.toFixed(6) : crypto.currentPrice.toLocaleString()}</span>
@@ -242,7 +242,7 @@ function generateNewsletterHTML(cryptos) {
             <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
                 ${topLosers.map((crypto, index) => `
                     <p style="margin: 8px 0; padding: 12px; background-color: white; border-radius: 8px; border-left: 4px solid #ef4444;">
-                        <strong style="color: #1f2937;">#${index + 1} - <a href="https://cryptomonth.info#${crypto.id}" style="color: #1d4ed8; text-decoration: none; font-weight: bold;">${crypto.symbol}</a> (${crypto.name})</strong><br>
+                        <strong style="color: #1f2937;">#${index + 1} - <a href="https://cryptomonth.info/#${crypto.id}" style="color: #1d4ed8; text-decoration: none; font-weight: bold;">${crypto.symbol}</a> (${crypto.name})</strong><br>
                         <span style="color: #ef4444; font-weight: bold; font-size: 16px;">${crypto.monthlyChange.toFixed(1)}%</span> (30 days) | 
                         <span style="color: #6b7280;">7d: ${crypto.weeklyChange > 0 ? '+' : ''}${crypto.weeklyChange.toFixed(1)}%</span> | 
                         <span style="color: #374151; font-weight: 500;">$${crypto.currentPrice < 0.01 ? crypto.currentPrice.toFixed(6) : crypto.currentPrice.toLocaleString()}</span>
