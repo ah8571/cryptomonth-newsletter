@@ -334,168 +334,153 @@ function generateMarketSentimentAnalysis(cryptos) {
   console.log(`   DeFi: ${themes.defi.map(c => c.name).join(', ')}`);
   console.log(`   Meme: ${themes.meme.map(c => c.name).join(', ')}`);
   
-  // Helper function to create source links from actual news quotes
-  const createSourceLink = (crypto) => {
-    // Generate realistic news sources and URLs
-    const sources = [
-      'CryptoNews Daily',
-      'Blockchain Today', 
-      'DeFi Weekly',
-      'Market Watch Crypto',
-      'Trading Weekly',
-      'Institutional Crypto',
-      'Crypto Fundamentals'
-    ];
-    
-    const randomSource = sources[Math.floor(Math.random() * sources.length)];
-    const cleanName = crypto.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-    const cleanSymbol = crypto.symbol.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    
-    const sourceUrls = {
-      'CryptoNews Daily': `https://cryptonewsdaily.com/news/${cleanName}-${cleanSymbol}-analysis-${dateStr}`,
-      'Blockchain Today': `https://blockchaintoday.com/articles/${cleanName}-market-update-${dateStr}`,
-      'DeFi Weekly': `https://defiweekly.com/analysis/${cleanName}-defi-trends-${dateStr}`,
-      'Market Watch Crypto': `https://marketwatchcrypto.com/news/${cleanName}-market-analysis-${dateStr}`,
-      'Trading Weekly': `https://tradingweekly.com/crypto/${cleanName}-trading-insights-${dateStr}`,
-      'Institutional Crypto': `https://institutionalcrypto.com/analysis/${cleanName}-institutional-interest-${dateStr}`,
-      'Crypto Fundamentals': `https://cryptofundamentals.com/research/${cleanName}-fundamental-analysis-${dateStr}`
-    };
-    
-    const url = sourceUrls[randomSource] || `https://cryptonews.com/news/${cleanName}-${cleanSymbol}-analysis-${dateStr}`;
-    return `<a href="${url}" style="color: #1d4ed8; text-decoration: none;">${randomSource}</a>`;
-  };
-  
-  // Helper function to get a different source link (for variety)
-  const createAlternateSourceLink = (crypto, index = 1) => {
-    const sources = [
-      'Blockchain Analysis',
-      'Crypto Research Weekly', 
-      'Digital Asset Report',
-      'Token Economics',
-      'Crypto Investment Weekly',
-      'Market Dynamics',
-      'Blockchain Insights'
-    ];
-    
-    const randomSource = sources[Math.floor(Math.random() * sources.length)];
-    const cleanName = crypto.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-    const cleanSymbol = crypto.symbol.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    
-    const sourceUrls = {
-      'Blockchain Analysis': `https://blockchainanalysis.com/reports/${cleanName}-blockchain-analysis-${dateStr}`,
-      'Crypto Research Weekly': `https://cryptoresearchweekly.com/studies/${cleanName}-research-${dateStr}`,
-      'Digital Asset Report': `https://digitalassetreport.com/analysis/${cleanName}-asset-analysis-${dateStr}`,
-      'Token Economics': `https://tokeneconomics.com/research/${cleanName}-tokenomics-${dateStr}`,
-      'Crypto Investment Weekly': `https://cryptoinvestmentweekly.com/analysis/${cleanName}-investment-thesis-${dateStr}`,
-      'Market Dynamics': `https://marketdynamics.com/crypto/${cleanName}-market-forces-${dateStr}`,
-      'Blockchain Insights': `https://blockchaininsights.com/analysis/${cleanName}-insights-${dateStr}`
-    };
-    
-    const url = sourceUrls[randomSource] || `https://cryptoanalysis.com/reports/${cleanName}-${cleanSymbol}-report-${dateStr}`;
-    return `<a href="${url}" style="color: #1d4ed8; text-decoration: none;">${randomSource}</a>`;
-  };
-  
-  // Helper function for third source link
-  const createThirdSourceLink = (crypto) => {
-    const sources = [
-      'Investment Strategy Weekly',
-      'Risk Management Report', 
-      'Portfolio Analysis',
-      'Market Intelligence',
-      'Crypto Strategy Report',
-      'Investment Research',
-      'Market Outlook Weekly'
-    ];
-    
-    const randomSource = sources[Math.floor(Math.random() * sources.length)];
-    const cleanName = crypto.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-    const cleanSymbol = crypto.symbol.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    
-    const sourceUrls = {
-      'Investment Strategy Weekly': `https://investmentstrategyweekly.com/crypto/${cleanName}-strategy-${dateStr}`,
-      'Risk Management Report': `https://riskmanagementreport.com/crypto/${cleanName}-risk-analysis-${dateStr}`,
-      'Portfolio Analysis': `https://portfolioanalysis.com/crypto/${cleanName}-portfolio-impact-${dateStr}`,
-      'Market Intelligence': `https://marketintelligence.com/crypto/${cleanName}-intelligence-${dateStr}`,
-      'Crypto Strategy Report': `https://cryptostrategyreport.com/analysis/${cleanName}-strategy-${dateStr}`,
-      'Investment Research': `https://investmentresearch.com/crypto/${cleanName}-research-${dateStr}`,
-      'Market Outlook Weekly': `https://marketoutlookweekly.com/crypto/${cleanName}-outlook-${dateStr}`
-    };
-    
-    const url = sourceUrls[randomSource] || `https://cryptostrategy.com/analysis/${cleanName}-${cleanSymbol}-strategy-${dateStr}`;
-    return `<a href="${url}" style="color: #1d4ed8; text-decoration: none;">${randomSource}</a>`;
+  // Helper function to get real news source link if available
+  const getRealNewsLink = (crypto) => {
+    // Only use real news if crypto has actual quotes with real links
+    if (crypto.quotes && crypto.quotes.length > 0) {
+      const realQuote = crypto.quotes[0]; // Use first real quote
+      return `<a href="${realQuote.link}" style="color: #1d4ed8; text-decoration: none;">${realQuote.source}</a>`;
+    }
+    return null; // No real news available
   };
   
   // Build comprehensive analysis mentioning ALL top 10 gainers
-  let analysis = `The cryptocurrency market shows ${gainerPercentage >= 70 ? 'exceptional' : gainerPercentage >= 60 ? 'strong' : gainerPercentage >= 50 ? 'moderate' : 'mixed'} momentum this month (${gainerPercentage}% gainers), led by ${topGainers[0]?.name} with ${topGainers[0]?.monthlyChange > 200 ? 'an extraordinary' : topGainers[0]?.monthlyChange > 100 ? 'an impressive' : 'a solid'} +${topGainers[0]?.monthlyChange.toFixed(1)}% gain (${createSourceLink(topGainers[0])}). `;
+  let analysis = `The cryptocurrency market shows ${gainerPercentage >= 70 ? 'exceptional' : gainerPercentage >= 60 ? 'strong' : gainerPercentage >= 50 ? 'moderate' : 'mixed'} momentum this month (${gainerPercentage}% gainers), led by ${topGainers[0]?.name} with ${topGainers[0]?.monthlyChange > 200 ? 'an extraordinary' : topGainers[0]?.monthlyChange > 100 ? 'an impressive' : 'a solid'} +${topGainers[0]?.monthlyChange.toFixed(1)}% gain`;
+  
+  // Add source link only if real news is available
+  const topGainerNewsLink = getRealNewsLink(topGainers[0]);
+  if (topGainerNewsLink) {
+    analysis += ` (${topGainerNewsLink})`;
+  }
+  analysis += `. `;
   
   // Analyze ultra-extreme gainers (1000%+) - these are moonshots like Ethereal
   if (ultraExtremeGainers.length > 0) {
-    analysis += `Ultra-extreme moonshot performers include ${ultraExtremeGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(0)}%)`).join(', ')}, representing extraordinary discoveries with extreme volatility and potential manipulation risks (${createSourceLink(ultraExtremeGainers[0])}). `;
+    analysis += `Ultra-extreme moonshot performers include ${ultraExtremeGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(0)}%)`).join(', ')}, representing extraordinary discoveries with extreme volatility and potential manipulation risks`;
+    const ultraNewsLink = getRealNewsLink(ultraExtremeGainers[0]);
+    if (ultraNewsLink) {
+      analysis += ` (${ultraNewsLink})`;
+    }
+    analysis += `. `;
   }
   
   // Analyze extreme gainers (200-1000%)
   if (extremeGainers.length > 0) {
-    analysis += `Extreme performers include ${extremeGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')}, indicating significant market speculation and potential moonshot discoveries (${createSourceLink(extremeGainers[0])}). `;
+    analysis += `Extreme performers include ${extremeGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')}, indicating significant market speculation and potential moonshot discoveries`;
+    const extremeNewsLink = getRealNewsLink(extremeGainers[0]);
+    if (extremeNewsLink) {
+      analysis += ` (${extremeNewsLink})`;
+    }
+    analysis += `. `;
   }
   
   // Analyze strong gainers (100-200%)
   if (strongGainers.length > 0) {
-    analysis += `Strong performers ${strongGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} demonstrate sustained institutional interest in utility-driven cryptocurrencies (${createAlternateSourceLink(strongGainers[0])}). `;
+    analysis += `Strong performers ${strongGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} demonstrate sustained institutional interest in utility-driven cryptocurrencies`;
+    const strongNewsLink = getRealNewsLink(strongGainers[0]);
+    if (strongNewsLink) {
+      analysis += ` (${strongNewsLink})`;
+    }
+    analysis += `. `;
   }
   
   // Analyze moderate gainers (50-100%)
   if (moderateGainers.length > 0) {
-    analysis += `Moderate gainers including ${moderateGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} show healthy market expansion across established projects (${createAlternateSourceLink(moderateGainers[0], 1)}). `;
+    analysis += `Moderate gainers including ${moderateGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} show healthy market expansion across established projects`;
+    const moderateNewsLink = getRealNewsLink(moderateGainers[0]);
+    if (moderateNewsLink) {
+      analysis += ` (${moderateNewsLink})`;
+    }
+    analysis += `. `;
   }
   
   // Analyze minor gainers (0-50%) if any in top 10
   if (minorGainers.length > 0) {
-    analysis += `Steady performers ${minorGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} show consistent growth in established markets (${createSourceLink(minorGainers[0])}). `;
+    analysis += `Steady performers ${minorGainers.map(crypto => `${crypto.name} (+${crypto.monthlyChange.toFixed(1)}%)`).join(', ')} show consistent growth in established markets`;
+    const minorNewsLink = getRealNewsLink(minorGainers[0]);
+    if (minorNewsLink) {
+      analysis += ` (${minorNewsLink})`;
+    }
+    analysis += `. `;
   }
   
   // Theme analysis
   if (themes.ethereum.length > 0) {
-    analysis += `Ethereum ecosystem tokens are particularly strong with ${themes.ethereum.length} projects in the top 10, including ${themes.ethereum.slice(0, 2).map(crypto => crypto.name).join(' and ')}, reflecting continued ETH staking and Layer 2 adoption (${createAlternateSourceLink(themes.ethereum[0], 0)}). `;
+    analysis += `Ethereum ecosystem tokens are particularly strong with ${themes.ethereum.length} projects in the top 10, including ${themes.ethereum.slice(0, 2).map(crypto => crypto.name).join(' and ')}, reflecting continued ETH staking and Layer 2 adoption`;
+    const ethNewsLink = getRealNewsLink(themes.ethereum[0]);
+    if (ethNewsLink) {
+      analysis += ` (${ethNewsLink})`;
+    }
+    analysis += `. `;
   }
   
   if (themes.defi.length > 0) {
-    analysis += `DeFi protocols show renewed strength with ${themes.defi.slice(0, 2).map(crypto => crypto.name).join(' and ')} leading the charge, suggesting increased yield farming and liquidity provision activity (${createAlternateSourceLink(themes.defi[0], 1)}). `;
+    analysis += `DeFi protocols show renewed strength with ${themes.defi.slice(0, 2).map(crypto => crypto.name).join(' and ')} leading the charge, suggesting increased yield farming and liquidity provision activity`;
+    const defiNewsLink = getRealNewsLink(themes.defi[0]);
+    if (defiNewsLink) {
+      analysis += ` (${defiNewsLink})`;
+    }
+    analysis += `. `;
   }
   
   if (themes.meme.length > 0) {
-    analysis += `Meme token resurgence is evident with ${themes.meme.slice(0, 2).map(crypto => crypto.name).join(' and ')} posting significant gains, indicating retail investor enthusiasm and social media-driven momentum (${createSourceLink(themes.meme[0])}). `;
+    analysis += `Meme token resurgence is evident with ${themes.meme.slice(0, 2).map(crypto => crypto.name).join(' and ')} posting significant gains, indicating retail investor enthusiasm and social media-driven momentum`;
+    const memeNewsLink = getRealNewsLink(themes.meme[0]);
+    if (memeNewsLink) {
+      analysis += ` (${memeNewsLink})`;
+    }
+    analysis += `. `;
   }
   
   // Risk analysis for extreme gainers
   if (extremeGainers.length > 0) {
-    analysis += `However, investors should exercise extreme caution with triple-digit gainers like ${extremeGainers[0]?.name}, as such explosive moves often indicate high volatility, potential market manipulation, and significant correction risk (${createAlternateSourceLink(extremeGainers[0], 1)}). `;
+    analysis += `However, investors should exercise extreme caution with triple-digit gainers like ${extremeGainers[0]?.name}, as such explosive moves often indicate high volatility, potential market manipulation, and significant correction risk. `;
   } else if (topGainers[0] && topGainers[0].monthlyChange > 100) {
-    analysis += `Investors should remain cautious with high-momentum plays like ${topGainers[0].name}, as substantial gains can quickly reverse in volatile crypto markets (${createAlternateSourceLink(topGainers[0], 1)}). `;
+    analysis += `Investors should remain cautious with high-momentum plays like ${topGainers[0].name}, as substantial gains can quickly reverse in volatile crypto markets. `;
   }
   
   // Analyze top losers with more detail
   if (topLosers.length > 0) {
     if (severeDeclines.length > 0) {
-      analysis += `Severe declines are led by ${severeDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')}, suggesting fundamental issues or market-specific challenges requiring careful analysis (${createSourceLink(severeDeclines[0])}). `;
+      analysis += `Severe declines are led by ${severeDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')}, suggesting fundamental issues or market-specific challenges requiring careful analysis`;
+      const severeNewsLink = getRealNewsLink(severeDeclines[0]);
+      if (severeNewsLink) {
+        analysis += ` (${severeNewsLink})`;
+      }
+      analysis += `. `;
     }
     
     if (moderateDeclines.length > 0) {
-      analysis += `Moderate declines in ${moderateDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} may present contrarian opportunities for experienced investors willing to accept elevated risk (${createAlternateSourceLink(moderateDeclines[0], 0)}). `;
+      analysis += `Moderate declines in ${moderateDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} may present contrarian opportunities for experienced investors willing to accept elevated risk`;
+      const moderateDeclineNewsLink = getRealNewsLink(moderateDeclines[0]);
+      if (moderateDeclineNewsLink) {
+        analysis += ` (${moderateDeclineNewsLink})`;
+      }
+      analysis += `. `;
     }
     
     if (minorDeclines.length > 0) {
-      analysis += `Minor pullbacks in established projects like ${minorDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} could indicate healthy profit-taking rather than fundamental weakness (${createAlternateSourceLink(minorDeclines[0], 1)}). `;
+      analysis += `Minor pullbacks in established projects like ${minorDeclines.slice(0, 2).map(crypto => `${crypto.name} (${crypto.monthlyChange.toFixed(1)}%)`).join(' and ')} could indicate healthy profit-taking rather than fundamental weakness`;
+      const minorDeclineNewsLink = getRealNewsLink(minorDeclines[0]);
+      if (minorDeclineNewsLink) {
+        analysis += ` (${minorDeclineNewsLink})`;
+      }
+      analysis += `. `;
     }
   }
   
   // Investment strategy conclusion
-  analysis += `Investment insight: This market environment favors ${gainerPercentage >= 60 ? 'selective momentum strategies with strong risk management' : 'defensive positioning with careful opportunity selection'}, emphasizing thorough due diligence, position sizing discipline, and the critical importance of taking profits on extreme gainers while maintaining exposure to fundamentally strong projects with sustainable growth trajectories (${createThirdSourceLink(topGainers[0])}).`;
+  analysis += `Investment insight: This market environment favors ${gainerPercentage >= 60 ? 'selective momentum strategies with strong risk management' : 'defensive positioning with careful opportunity selection'}, emphasizing thorough due diligence, position sizing discipline, and the critical importance of taking profits on extreme gainers while maintaining exposure to fundamentally strong projects with sustainable growth trajectories.`;
   
   return analysis;
 }
+
+// Remove fake news generation - we'll use real news or leave blank
+// This function is no longer used but kept for reference
+const generateFakeNewsQuotes = (crypto: { name: string; symbol: string; change: number; source: string }): Quote[] => {
+  // This function is deprecated - we now use real news APIs only
+  return [];
+};
 
 // Send newsletter via ConvertKit
 async function sendNewsletter(html) {
